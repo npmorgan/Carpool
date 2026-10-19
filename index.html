@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Carpool planner</title>
+<style>
+:root{
+  --bg:#008080;--face:#c0c0c0;--hi:#fff;--sh:#808080;--dk:#404040;--navy:#000080;--bad:#c00000;--ok:#007000;--paint:#ffff00;--ln:84px;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:#000;font:13px/1.4 Tahoma,Verdana,Arial,sans-serif}
+main{max-width:980px;margin:0 auto;padding:16px 12px 40px}
+h1{font:bold 34px/1.1 "Times New Roman",Times,serif;color:#fff;text-shadow:2px 2px 0 #000;margin:0 0 6px;text-align:center}
+.sub{color:#fff;margin:0 0 12px;text-align:center}
+section{background:var(--face);border:2px solid;border-color:var(--hi) var(--dk) var(--dk) var(--hi);box-shadow:inset -1px -1px var(--sh),inset 1px 1px #dfdfdf;padding:12px;margin-bottom:14px}
+h2{margin:-12px -12px 12px;padding:3px 6px;background:linear-gradient(90deg,var(--navy),#1084d0);color:#fff;font:bold 13px Tahoma,Arial,sans-serif}
+h2 small{font-weight:normal;margin-left:10px}
+.top{display:flex;flex-wrap:wrap;gap:10px;align-items:end;justify-content:space-between}
+label.f{display:flex;flex-direction:column;gap:2px;font-size:12px}
+input{font:13px Tahoma,Arial,sans-serif;color:#000;background:#fff;border:2px solid;border-color:var(--sh) var(--hi) var(--hi) var(--sh);box-shadow:inset 1px 1px #000;border-radius:0;padding:3px 4px;min-width:0}
+input:focus-visible{outline:2px solid var(--navy);outline-offset:0}
+button{font:13px Tahoma,Arial,sans-serif;color:#000;cursor:pointer;border-radius:0;background:var(--face);border:2px solid;border-color:var(--hi) var(--dk) var(--dk) var(--hi);box-shadow:inset -1px -1px var(--sh);padding:4px 12px}
+button:active{border-color:var(--dk) var(--hi) var(--hi) var(--dk);box-shadow:inset 1px 1px var(--sh);padding:5px 11px 3px 13px}
+button:focus-visible{outline:1px dotted #000;outline-offset:-5px}
+button.primary{font-weight:bold}
+button.x{color:var(--bad);padding:3px 8px}
+.stats{display:flex;flex-wrap:wrap;gap:6px 28px;background:#000;color:#00ff00;padding:6px 12px;border:2px solid;border-color:var(--sh) var(--hi) var(--hi) var(--sh);font-family:"Courier New",Courier,monospace}
+.stat b{display:block;font-size:22px;line-height:1.1}
+.stat span{font-size:12px}
+.bad b{color:#ff5050}
+.alert{background:#ffffe1;color:var(--bad);border:1px solid #000;padding:6px 8px;margin-top:10px;font-weight:bold}
+.alert:empty{display:none}
+.alert div::before{content:"\26A0\00a0"}
+.tl-wrap{overflow-x:auto}
+.tl{position:relative;width:100%}
+.axis{position:relative;height:20px;margin-left:var(--ln);border-bottom:2px solid var(--sh)}
+.tick{position:absolute;top:2px;font-size:11px;white-space:nowrap;transform:translateX(-50%)}
+.tick.last{transform:translateX(-100%)}
+.lane{display:flex;align-items:stretch;height:42px;margin-top:4px}
+.lname{width:var(--ln);flex:none;font-size:12px;display:flex;align-items:center;padding-right:4px}
+.lane.over .lname{color:var(--bad);font-weight:bold}
+.track{position:relative;flex:1;background:#808080;overflow:hidden;border:2px solid;border-color:var(--sh) var(--hi) var(--hi) var(--sh);box-shadow:inset 4px 0 0 var(--paint),inset -4px 0 0 var(--paint)}
+.lane.over .track{box-shadow:inset 4px 0 0 #f00,inset -4px 0 0 #f00}
+.grid{position:absolute;top:0;bottom:0;width:1px;background:rgba(255,255,255,.35)}
+.bar{position:absolute;top:3px;bottom:3px;color:#fff;padding:1px 5px;overflow:hidden;white-space:nowrap;font-size:11px;line-height:1.15;display:flex;flex-direction:column;justify-content:center;border:1px solid;border-color:#fff #000 #000 #fff}
+.bar b{font-weight:bold}
+.carrow{display:grid;grid-template-columns:14px minmax(120px,1fr) minmax(170px,1fr) minmax(170px,1fr) auto;gap:6px 8px;align-items:end;padding:8px 0;border-top:2px groove #fff}
+.carrow:first-of-type{border-top:0}
+.dot{width:14px;height:14px;border:1px solid #000;margin-bottom:6px}
+.note{grid-column:2 / -1;font-size:12px;font-style:italic}
+.note.warn{color:var(--bad)}
+.empty{padding:6px 0}
+.nin{grid-column:2 / 4}.nout{grid-column:4 / 6}
+.carrow .x{grid-column:5;grid-row:1}
+.ppl{width:100%;border-collapse:collapse;background:#fff;border:2px solid;border-color:var(--sh) var(--hi) var(--hi) var(--sh);min-width:480px}
+.ppl th{text-align:left;background:var(--face);border:1px solid var(--sh);padding:3px 6px}
+.ppl td{border:1px solid #a0a0a0;padding:4px 6px;vertical-align:top}
+.ppl td.warn{color:var(--bad);font-weight:bold}
+.ppl td.okc{color:var(--ok)}
+.chip{display:inline-flex;align-items:center;gap:5px;background:#ffffe1;border:1px solid #000;padding:1px 5px;margin:0 4px 3px 0;font-size:12px}
+.chip i{width:9px;height:9px;border:1px solid #000}
+.chip small{font-size:11px}
+.sync{display:flex;flex-wrap:wrap;gap:6px 20px;align-items:center;margin:0 0 14px;font-size:12px;color:#fff}
+.sync i{display:inline-block;width:10px;height:10px;background:#808080;border:1px solid #000;margin-right:6px}
+.sync[data-s=live] i{background:#00ff00}
+.sync[data-s=offline] i{background:#f00}
+.sync[data-s=saving] i{background:#ff0}
+.sync input{width:110px}
+.sync button{padding:1px 8px}
+.sync [hidden]{display:none}
+.foot{text-align:center;color:#fff;font-size:11px}
+@media (max-width:700px){
+  :root{--ln:60px}
+  h1{font-size:26px}
+  .carrow{grid-template-columns:14px 1fr auto}
+  .carrow .f{grid-column:2 / -1}
+  .carrow .f.car{grid-column:2}
+  .carrow .x{grid-column:3;grid-row:1}
+  .note{grid-column:2 / -1}
+}
+</style>
+</head>
+<body>
+<main>
+  <h1>~ Carpool Planner ~</h1>
+  <p class="sub">Add each car with its arrival and departure details. The lot view shows who parks where and when you run out of spaces.</p>
+  <div class="sync" id="sync" data-s="local">
+    <span><i></i><span id="syncText"></span></span>
+    <label id="roomBox" hidden>Room <input id="room" aria-label="Room name"> <button id="go">Switch</button></label>
+  </div>
+
+  <section>
+    <h2>Status</h2>
+    <div class="top">
+      <div class="stats" id="stats"></div>
+      <label class="f">Parking spaces
+        <input id="spaces" type="number" min="1" max="20" value="4" style="width:90px">
+      </label>
+    </div>
+    <div class="alert" id="alerts"></div>
+  </section>
+
+  <section>
+    <h2>Lot timeline <small id="tlRange"></small></h2>
+    <div class="tl-wrap"><div class="tl" id="tl"></div></div>
+  </section>
+
+  <section>
+    <h2>People</h2>
+    <div id="people"></div>
+  </section>
+
+  <section>
+    <h2>Cars</h2>
+    <div class="top" style="margin-bottom:6px;justify-content:flex-end">
+      <div style="display:flex;gap:8px">
+        <button id="clear">Clear all</button>
+        <button id="add" class="primary">Add car</button>
+      </div>
+    </div>
+    <div id="list"></div>
+  </section>
+  <p class="foot">Best viewed at 800x600 in Netscape Navigator.</p>
+</main>
+
+<script>
+// ---- Shared sync: Firebase Realtime Database (REST + live stream, no SDK) ----
+// Paste your database URL between the quotes, e.g. 'https://my-carpool-default-rtdb.firebaseio.com'
+const DB='https://console.firebase.google.com/u/0/project/carpool-f8770/database/carpool-f8770-default-rtdb/data/~2F';
+const ROOM=location.hash.slice(1).toLowerCase().replace(/[^a-z0-9_-]/g,'')||'main';
+const KEY='carpool-planner-v2';
+const BASE=DB.replace(/\/$/,'')+'/rooms/'+ROOM;
+let remote={},pending={},timer=null;
+const SYNC_TEXT={
+  local:'Saved in this browser only. Add a database URL to share with everyone.',
+  live:'Live. Everyone with this link sees changes as they happen.',
+  saving:'Saving…',
+  offline:'Offline. Changes will retry automatically.'
+};
+function setSync(k){const el=document.getElementById('sync');if(!el)return;el.dataset.s=k;document.getElementById('syncText').textContent=SYNC_TEXT[k]}
+function push(path,val){
+  if(!DB)return;
+  for(const k in pending){
+    if(path.startsWith(k+'/')&&pending[k]&&typeof pending[k]==='object'){
+      pending[k][path.slice(k.length+1)]=val;schedule();return;
+    }
+  }
+  for(const k in pending){if(k.startsWith(path+'/'))delete pending[k]}
+  pending[path]=val;schedule();
+}
+function schedule(){setSync('saving');clearTimeout(timer);timer=setTimeout(flush,300)}
+async function flush(){
+  const batch={...pending};for(const k in pending)delete pending[k];
+  if(!Object.keys(batch).length)return;
+  try{
+    const r=await fetch(BASE+'.json',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(batch)});
+    if(!r.ok)throw new Error('http '+r.status);
+    if(!Object.keys(pending).length)setSync('live');
+  }catch(e){
+    for(const k in batch)if(!(k in pending))pending[k]=batch[k];
+    setSync('offline');clearTimeout(timer);timer=setTimeout(flush,3000);
+  }
+}
+function setAt(parts,val){
+  if(!parts.length){remote=val&&typeof val==='object'?val:{};return}
+  let o=remote;
+  for(const p of parts.slice(0,-1)){if(!o[p]||typeof o[p]!=='object')o[p]={};o=o[p]}
+  const last=parts[parts.length-1];
+  if(val===null||val===undefined)delete o[last];else o[last]=val;
+}
+function onMsg(type,e){
+  let m;try{m=JSON.parse(e.data)}catch(x){return}
+  const parts=m.path.split('/').filter(Boolean);
+  if(type==='put')setAt(parts,m.data);
+  else Object.keys(m.data||{}).forEach(k=>setAt([...parts,...k.split('/')],m.data[k]));
+  syncFromRemote();
+}
+function syncFromRemote(){
+  const a=document.activeElement;
+  const row0=a&&a.closest?a.closest('.carrow'):null;
+  const foc=row0&&a.dataset.k?{id:row0.dataset.id,k:a.dataset.k,v:a.value}:null;
+  const prev=state.cars.map(c=>c.id).join();
+  const cars=Object.entries(remote.cars||{}).filter(([,c])=>c&&typeof c==='object')
+    .map(([id,c])=>({name:'',inP:'',outP:'',...c,arr:norm(c.arr),dep:norm(c.dep),id,ord:+c.ord||+id||0}))
+    .sort((x,y)=>x.ord-y.ord);
+  if(foc){const c=cars.find(x=>x.id==foc.id);if(c)c[foc.k]=foc.v}
+  state.cars=cars;
+  if(a!==$('spaces')){state.spaces=Math.min(20,Math.max(1,parseInt(remote.spaces)||4));$('spaces').value=state.spaces}
+  if(cars.map(c=>c.id).join()===prev){
+    cars.forEach(c=>{
+      const row=document.querySelector(`.carrow[data-id="${c.id}"]`);if(!row)return;
+      row.querySelectorAll('[data-k]').forEach(i=>{if(i!==a){const v=String(c[i.dataset.k]??'');if(i.value!==v)i.value=v}});
+    });
+  }else{
+    renderList();
+    if(foc){const i=document.querySelector(`.carrow[data-id="${foc.id}"] [data-k="${foc.k}"]`);if(i)i.focus()}
+  }
+  renderViz();
+}
+function initSync(){
+  $('roomBox').hidden=!DB;$('room').value=ROOM;
+  $('go').onclick=()=>{const r=$('room').value.toLowerCase().replace(/[^a-z0-9_-]/g,'')||'main';location.hash=r;location.reload()};
+  if(!DB){setSync('local');return}
+  const es=new EventSource(BASE+'.json');
+  es.addEventListener('put',e=>onMsg('put',e));
+  es.addEventListener('patch',e=>onMsg('patch',e));
+  es.onopen=()=>setSync('live');
+  es.onerror=()=>setSync('offline');
+}
+let state={spaces:4,cars:DB?[]:[
+  {id:1,name:'Maya’s Civic',arr:'08:30',dep:'17:00',inP:'Maya, Jo, Ana',outP:'Maya, Jo'},
+  {id:2,name:'Dev’s Subaru',arr:'09:00',dep:'12:30',inP:'Dev, Kim',outP:'Dev, Kim'},
+  {id:3,name:'Priya’s Tesla',arr:'10:00',dep:'17:30',inP:'Priya',outP:'Priya, Ana'},
+  {id:4,name:'Sam’s Truck',arr:'09:30',dep:'16:00',inP:'Sam',outP:'Sam'},
+  {id:5,name:'Lee’s Mini',arr:'11:00',dep:'15:00',inP:'Lee, Raj',outP:'Lee, Raj'}
+]};
+if(!DB)try{const s=localStorage.getItem(KEY);if(s){const p=JSON.parse(s);if(p&&Array.isArray(p.cars))state=p}}catch(e){}
+const save=()=>{if(DB)return;try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}};
+const $=id=>document.getElementById(id);
+const pad=n=>String(n).padStart(2,'0');
+const _n=new Date(),TODAY=_n.getFullYear()+'-'+pad(_n.getMonth()+1)+'-'+pad(_n.getDate());
+const norm=t=>!t?'':String(t).includes('T')?String(t):TODAY+'T'+t;
+const mins=t=>{t=norm(t);if(!t)return NaN;const d=new Date(t);return isNaN(d)?NaN:Math.floor(d.getTime()/60000)};
+state.cars.forEach(c=>{c.arr=norm(c.arr);c.dep=norm(c.dep)});
+const fmt=m=>{const d=new Date(m*60000),h=d.getHours(),mm=d.getMinutes(),ap=h>=12?'pm':'am',h12=((h+11)%12)+1;return h12+(mm?':'+pad(mm):'')+ap};
+const fmtDT=m=>new Date(m*60000).toLocaleDateString([],{month:'short',day:'numeric'})+' '+fmt(m);
+let multiDay=false;const ft=m=>multiDay?fmtDT(m):fmt(m);
+const PAL=['#000080','#800000','#006000','#800080','#806000','#006868','#b04000','#404040'];
+const color=i=>PAL[i%PAL.length];
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const valid=c=>mins(c.arr)<mins(c.dep);
+const nm=s=>{const seen=new Set();return String(s||'').split(/[,;\n]/).map(x=>x.trim()).filter(x=>x&&!seen.has(x.toLowerCase())&&seen.add(x.toLowerCase()))};
+function peopleData(){
+  const m=new Map();
+  const get=n=>{const k=n.toLowerCase();if(!m.has(k))m.set(k,{name:n,inC:[],outC:[]});return m.get(k)};
+  state.cars.forEach((c,i)=>{nm(c.inP).forEach(n=>get(n).inC.push({c,i}));nm(c.outP).forEach(n=>get(n).outC.push({c,i}))});
+  return [...m.values()].sort((a,b)=>a.name.localeCompare(b.name));
+}
+function flag(p){
+  if(p.inC.length>1)return 'Arriving in '+p.inC.length+' cars';
+  if(p.outC.length>1)return 'Leaving in '+p.outC.length+' cars';
+  if(p.inC.length&&!p.outC.length)return 'No ride home';
+  if(!p.inC.length&&p.outC.length)return 'Not on any arrival list';
+  return '';
+}
+const chip=(o,t)=>`<span class="chip"><i style="background:${color(o.i)}"></i>${esc(o.c.name||'Car')}${t?` <small>${fmtDT(mins(t))}</small>`:''}</span>`;
+function renderPeople(){
+  const ps=peopleData();
+  $('people').innerHTML=!ps.length?'<div class="empty">Add names under “Arrives with” and “Leaves with” on each car to see who is where.</div>':
+  `<div class="tl-wrap"><table class="ppl"><thead><tr><th>Person</th><th>Arrives in</th><th>Leaves in</th><th>Check</th></tr></thead><tbody>`+
+  ps.map(p=>{const f=flag(p);return `<tr><td><b>${esc(p.name)}</b></td><td>${p.inC.map(o=>chip(o,o.c.arr)).join(' ')||'–'}</td><td>${p.outC.map(o=>chip(o,o.c.dep)).join(' ')||'–'}</td><td class="${f?'warn':'okc'}">${f||'OK'}</td></tr>`}).join('')+`</tbody></table></div>`;
+}
+
+function assign(){
+  const cars=state.cars.map((c,i)=>({c,i})).filter(o=>valid(o.c))
+    .sort((a,b)=>mins(a.c.arr)-mins(b.c.arr)||mins(a.c.dep)-mins(b.c.dep));
+  const lanes=[];
+  cars.forEach(o=>{
+    let k=lanes.findIndex(l=>l.end<=mins(o.c.arr));
+    if(k<0){k=lanes.length;lanes.push({end:0,items:[]})}
+    lanes[k].end=mins(o.c.dep);lanes[k].items.push(o);
+  });
+  return lanes;
+}
+
+function renderViz(){
+  const n=Math.max(1,state.spaces|0);
+  const ok=state.cars.filter(valid);
+  const lanes=assign();
+  const rows=Math.max(n,lanes.length);
+  let lo,hi,step=60,a0=0,d1=0;
+  const avail=Math.max(240,($('tl').clientWidth||800)-parseInt(getComputedStyle(document.documentElement).getPropertyValue('--ln')||84));
+  const dayOf=m=>new Date(m*60000).toDateString();
+  if(ok.length){
+    a0=Math.min(...ok.map(c=>mins(c.arr)));d1=Math.max(...ok.map(c=>mins(c.dep)));
+    multiDay=dayOf(a0)!==dayOf(d1);
+    const maxT=Math.max(2,Math.floor(avail/(multiDay?76:44)));
+    const align=st=>{const d=new Date(a0*60000);d.setMinutes(0,0,0);d.setHours(st>=1440?0:Math.floor(d.getHours()/(st/60))*(st/60));return Math.floor(d.getTime()/60000)};
+    for(const st of [60,120,180,360,720,1440,2880,10080,43200,525600]){
+      step=st;lo=align(st);hi=lo+Math.ceil((d1-lo)/st)*st;
+      if(hi-lo<240)hi=lo+240;
+      if((hi-lo)/st+1<=maxT)break;
+    }
+  }else{
+    const d=new Date();d.setHours(7,0,0,0);lo=Math.floor(d.getTime()/60000);hi=lo+720;multiDay=false;
+  }
+  const span=hi-lo,pct=m=>((m-lo)/span*100);
+  const tl=m=>{const d=new Date(m*60000);return(step>=1440||(d.getHours()===0&&d.getMinutes()===0))?d.toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'}):fmt(m)};
+  let ticks='',grid='';
+  for(let m=lo;m<=hi;m+=step){ticks+=`<span class="tick${pct(m)>96?' last':''}" style="left:${pct(m)}%">${tl(m)}</span>`;grid+=`<i class="grid" style="left:${pct(m)}%"></i>`}
+  let h=`<div class="axis">${ticks}</div>`;
+  for(let k=0;k<rows;k++){
+    const over=k>=n,l=lanes[k];
+    const bars=(l?l.items:[]).map(o=>{
+      const c=o.c,a=mins(c.arr),d=mins(c.dep);
+      return `<div class="bar" style="left:${pct(a)}%;width:${pct(d)-pct(a)}%;background:${color(o.i)}" title="${esc(c.name)} ${fmtDT(a)}–${fmtDT(d)} | In: ${esc(nm(c.inP).join(', ')||'none')} | Out: ${esc(nm(c.outP).join(', ')||'none')}"><b>${esc(c.name||'Car')}</b><span>${ft(a)}–${ft(d)} · ${nm(c.inP).length}→${nm(c.outP).length} people</span></div>`}).join('');
+    h+=`<div class="lane${over?' over':''}"><div class="lname">${over?'No space '+(k-n+1):'Space '+(k+1)}</div><div class="track">${grid}${bars}</div></div>`;
+  }
+  $('tl').innerHTML=h;
+  const dl=m=>new Date(m*60000).toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'});
+  $('tlRange').textContent=ok.length?(multiDay?dl(a0)+' to '+dl(d1):dl(a0)):'';
+
+  // stats
+  let peak=0,cur=0;
+  const ev=[];ok.forEach(c=>{ev.push([mins(c.arr),1]);ev.push([mins(c.dep),-1])});
+  ev.sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
+  ev.forEach(e=>{cur+=e[1];peak=Math.max(peak,cur)});
+  const arrP=state.cars.reduce((s,c)=>s+nm(c.inP).length,0),depP=state.cars.reduce((s,c)=>s+nm(c.outP).length,0);
+  const gap=arrP-depP;
+  const overflow=Math.max(0,peak-n);
+  $('stats').innerHTML=
+   `<div class="stat ${overflow?'bad':'good'}"><b>${peak} / ${n}</b><span>peak cars / spaces</span></div>`+
+   `<div class="stat"><b>${state.cars.length}</b><span>cars</span></div>`+
+   `<div class="stat"><b>${arrP} → ${depP}</b><span>people arriving → leaving</span></div>`;
+
+  const msgs=[];
+  if(overflow)msgs.push(`At peak, ${overflow} car${overflow>1?'s have':' has'} no space. Shift a car’s times or combine rides.`);
+  if(gap!==0)msgs.push(gap>0?`${gap} more ${gap>1?'people arrive':'person arrives'} than leave. Check who is left behind.`:`${-gap} more ${-gap>1?'people leave':'person leaves'} than arrive. Check who is joining a ride.`);
+  state.cars.forEach(c=>{if(!valid(c))msgs.push(`${c.name||'A car'}: departure must be after arrival, so it isn’t on the timeline.`)});
+  peopleData().forEach(p=>{const f=flag(p);if(f)msgs.push(p.name+': '+f+'.')});
+  $('alerts').innerHTML=msgs.map(m=>`<div>${esc(m)}</div>`).join('');
+  renderPeople();
+
+  // per-car notes
+  state.cars.forEach(c=>{
+    const el=document.getElementById('note'+c.id);if(!el)return;
+    const d=nm(c.inP).length-nm(c.outP).length;
+    el.className='note'+(valid(c)?'':' warn');
+    el.textContent=!valid(c)?'Departure must be after arrival.':d>0?`${d} stay${d>1?'':'s'} on site, leaving with other cars`:d<0?`${-d} join${d<-1?'':'s'} from other cars on departure`:'Same people arrive and leave';
+  });
+}
+
+function renderList(){
+  if(!state.cars.length){$('list').innerHTML='<div class="empty">No cars yet. Use “Add car” to start.</div>';return}
+  $('list').innerHTML=state.cars.map((c,i)=>`
+  <div class="carrow" data-id="${c.id}">
+    <i class="dot" style="background:${color(i)}"></i>
+    <label class="f car">Car label<input data-k="name" value="${esc(c.name)}" placeholder="e.g. Maya’s Civic"></label>
+    <label class="f">Arrives<input data-k="arr" type="datetime-local" value="${c.arr}"></label>
+    <label class="f">Departs<input data-k="dep" type="datetime-local" value="${c.dep}"></label>
+    <label class="f nin">Arrives with<input data-k="inP" value="${esc(c.inP||'')}" placeholder="Names, comma separated"></label>
+    <label class="f nout">Leaves with<input data-k="outP" value="${esc(c.outP||'')}" placeholder="Names, comma separated"></label>
+    <button class="x" data-del="${c.id}" aria-label="Remove ${esc(c.name||'car')}">Remove</button>
+    <div class="note" id="note${c.id}"></div>
+  </div>`).join('');
+}
+
+$('list').addEventListener('input',e=>{
+  const row=e.target.closest('.carrow');if(!row||!e.target.dataset.k)return;
+  const c=state.cars.find(x=>x.id==row.dataset.id),k=e.target.dataset.k;
+  c[k]=e.target.value;push(`cars/${c.id}/${k}`,c[k]);
+  save();renderViz();
+});
+$('list').addEventListener('click',e=>{
+  const id=e.target.dataset.del;if(!id)return;
+  state.cars=state.cars.filter(c=>c.id!=id);push('cars/'+id,null);save();renderList();renderViz();
+});
+$('add').onclick=()=>{
+  const id=String(Date.now());
+  const day=state.cars.length?norm(state.cars[state.cars.length-1].arr).slice(0,10):TODAY;
+  const car={id,name:'Car '+(state.cars.length+1),arr:day+'T09:00',dep:day+'T17:00',inP:'',outP:'',ord:+id};
+  state.cars.push(car);
+  push('cars/'+id,{name:car.name,arr:car.arr,dep:car.dep,inP:'',outP:'',ord:car.ord});
+  save();renderList();renderViz();
+  const inp=document.querySelector(`[data-id="${id}"] input`);if(inp){inp.focus();inp.select()}
+};
+$('clear').onclick=()=>{if(state.cars.length&&confirm('Remove all cars?')){state.cars=[];push('cars',null);save();renderList();renderViz()}};
+$('spaces').oninput=e=>{state.spaces=Math.min(20,Math.max(1,parseInt(e.target.value)||1));push('spaces',state.spaces);save();renderViz()};
+$('spaces').value=state.spaces;
+renderList();renderViz();initSync();
+let rt;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(renderViz,100)});
+</script>
+</body>
+</html>
